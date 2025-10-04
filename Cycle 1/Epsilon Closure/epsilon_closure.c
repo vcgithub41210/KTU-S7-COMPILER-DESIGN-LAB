@@ -2,82 +2,83 @@
 #include <stdlib.h>
 #include <string.h>
 
-char result[20][20]; // To store the closure result 
-char copy[3];        // Holds the current state being processed
-char states[20][20]; // To store the states data
+#define MAX 20  // Maximum number of states
 
-void addState(char a[20], int i) {
-	strcpy(result[i], a);
+char states[MAX][20];         // List of states
+int n;                        // Number of states
+int visited[MAX];             // Visited array for DFS
+
+int eTransition[MAX][MAX];    // Epsilon transitions (adjacency matrix)
+
+// Get index of a state in the states array
+int getStateIndex(char *s) {
+    for (int i = 0; i < n; i++)
+        if (strcmp(states[i], s) == 0) return i;
+    return -1;
 }
 
-void display(int n) {
-    int k = 0;
-    
-    printf("\nEpsilon closure of %s = {", copy);
-    while (k < n) {
-        printf(" %s", result[k]);
-        k++;
+// DFS to compute epsilon closure
+void dfs(int state, int closure[]) {
+    if (visited[state]) return;
+    visited[state] = 1;
+    closure[state] = 1;
+
+    for (int i = 0; i < n; i++) {
+        if (eTransition[state][i]) {
+            dfs(i, closure);
+        }
+    }
+}
+
+// Compute and print epsilon closure for a given state
+void computeEpsilonClosure(char *start) {
+    int closure[MAX] = {0};
+    memset(visited, 0, sizeof(visited));
+
+    int idx = getStateIndex(start);
+    if (idx == -1) {
+        printf("Invalid state %s\n", start);
+        return;
+    }
+
+    dfs(idx, closure);
+
+    printf("Epsilon closure of %s = {", start);
+    for (int i = 0; i < n; i++) {
+        if (closure[i]) printf(" %s", states[i]);
     }
     printf(" }\n");
 }
 
 int main() {
-	FILE *INPUT;
-    INPUT = fopen("input.txt", "r");
-    	
-    // File reading variables
-    char state1[3]; // Source state
-    char input[3];  // Transition Element
-    char state2[3]; // Destination state
-    	
-    char state[3];  // Store Current Processing State
-	int n;          // No. of States
-	
-	printf("\nEnter The Number of States: ");
-	scanf("%d", &n);
-	
-	printf("\nEnter The States: \n");
-	for (int k = 0; k < n; k++){
-    		scanf("%s", states[k]);
-	}
-	
-	for (int k = 0; k < n; k++) {
-		int i = 0; 		    // Counter for states in epsilon closure for each variable
-    	strcpy(state, states[k]);   // Mark current processing state
-    	strcpy(copy, state);	    // Mark current processing state for displaying
-    	addState(state, i++);
-    		
-    	while (1) {
-    		int end = fscanf(INPUT, "%s %s %s", state1, input, state2);
-    		if (end == EOF) break;
-    			
-    		if ((strcmp(state, state1) == 0) && (strcmp(input, "e") == 0)){
-                		addState(state2, i++);
-                		strcpy(state, state2);  // Move on to check epsilon transitions from new state
-            	}
-    	}
-    		
-    	display(i);
-    	rewind(INPUT);
+    FILE *INPUT = fopen("input.txt", "r");
+    if (!INPUT) {
+        printf("Error opening input.txt\n");
+        return 1;
     }
-	
-	fclose(INPUT);
-	return 0;
+
+    printf("Enter number of states: ");
+    scanf("%d", &n);
+
+    printf("Enter the states:\n");
+    for (int i = 0; i < n; i++)
+        scanf("%s", states[i]);
+
+    // Read epsilon transitions from file
+    char state1[20], input[3], state2[20];
+    while (fscanf(INPUT, "%s %s %s", state1, input, state2) != EOF) {
+        if (strcmp(input, "e") == 0) {
+            int from = getStateIndex(state1);
+            int to = getStateIndex(state2);
+            if (from != -1 && to != -1) eTransition[from][to] = 1;
+        }
+    }
+
+    // Compute epsilon closure for each state
+    for (int i = 0; i < n; i++) {
+        computeEpsilonClosure(states[i]);
+    }
+
+    fclose(INPUT);
+    return 0;
 }
-
-
-/*
-Enter The Number of States: 3
-
-Enter The States: 
-q0
-q1
-q2
-
-Epsilon closure of q0 = { q0 q1 q2 }
-
-Epsilon closure of q1 = { q1 q2 }
-
-Epsilon closure of q2 = { q2 }
-
-*/
