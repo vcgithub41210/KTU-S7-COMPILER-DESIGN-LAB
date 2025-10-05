@@ -5,16 +5,11 @@
     int valid = 1;
 %}
 
-%token digit letter
+%token var
 
 %%
 
-start : letter s;
-
-s :     letter s
-    |   digit s
-    |   /* empty */
-    ;
+start : var;
 
 %%
 
